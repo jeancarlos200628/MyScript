@@ -1,1 +1,448 @@
 https://raw.githubusercontent.com/jeancarlos200628/MyScript/main/main.lua
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- =========================================================
+-- CONFIG
+-- =========================================================
+local CONFIG = {
+    TITLE = "Static",
+    SUBTITLE = "Standalone Script Loader",
+
+    -- Put YOUR OWN raw .lua URL here.
+    -- Example: https://raw.githubusercontent.com/you/repo/main/script.lua
+    SCRIPT_URL = "",
+
+    -- Or paste YOUR OWN script between [[ and ]].
+    -- Leave this placeholder alone when using SCRIPT_URL.
+    SCRIPT_SOURCE = [[
+-- YOUR SCRIPT GOES HERE
+]],
+
+    DISCORD_INVITE = "XYsTvuudeU",
+    LOGO_URL = "https://raw.githubusercontent.com/th3-osc/Static/main/logo.png",
+}
+
+-- =========================================================
+-- UTILITIES
+-- =========================================================
+local function trim(s)
+    if type(s) ~= "string" then return "" end
+    return s:gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function notify(message, isError)
+    if getgenv then
+        local ok, env = pcall(getgenv)
+        if ok and type(env) == "table" then
+            env.__STATIC_LAST_STATUS = message
+        end
+    end
+    warn("[Static] " .. message)
+end
+
+local function tween(instance, duration, properties, style, direction)
+    local info = TweenInfo.new(
+        duration,
+        style or Enum.EasingStyle.Quint,
+        direction or Enum.EasingDirection.Out
+    )
+    local animation = TweenService:Create(instance, info, properties)
+    animation:Play()
+    return animation
+end
+
+local function corner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 10)
+    c.Parent = parent
+    return c
+end
+
+local function stroke(parent, color, thickness)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Thickness = thickness or 1
+    s.Parent = parent
+    return s
+end
+
+-- =========================================================
+-- GUI
+-- =========================================================
+local existing = nil
+pcall(function()
+    existing = game:GetService("CoreGui"):FindFirstChild("Static_NoKey")
+    if existing then existing:Destroy() end
+end)
+
+local guiParent
+pcall(function()
+    guiParent = game:GetService("CoreGui")
+end)
+if not guiParent then
+    guiParent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "Static_NoKey"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Gui.Parent = guiParent
+
+local overlay = Instance.new("Frame")
+overlay.Size = UDim2.fromScale(1, 1)
+overlay.BackgroundTransparency = 1
+overlay.Parent = Gui
+
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(0, 432, 0, 292)
+shadow.Position = UDim2.new(0.5, 0, 0.5, 8)
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.55
+shadow.BorderSizePixel = 0
+shadow.Parent = overlay
+corner(shadow, 18)
+
+local card = Instance.new("Frame")
+card.Size = UDim2.new(0, 420, 0, 280)
+card.Position = UDim2.new(0.5, 0, 0.5, 22)
+card.AnchorPoint = Vector2.new(0.5, 0.5)
+card.BackgroundColor3 = Color3.fromRGB(14, 16, 23)
+card.BorderSizePixel = 0
+card.ClipsDescendants = true
+card.Parent = overlay
+corner(card, 16)
+
+local cardStroke = stroke(card, Color3.fromRGB(42, 47, 65), 1)
+
+local topLine = Instance.new("Frame")
+topLine.Size = UDim2.new(0, 110, 0, 3)
+topLine.Position = UDim2.new(0.5, 0, 0, 0)
+topLine.AnchorPoint = Vector2.new(0.5, 0)
+topLine.BackgroundColor3 = Color3.fromRGB(0, 155, 255)
+topLine.BorderSizePixel = 0
+topLine.Parent = card
+corner(topLine, 3)
+
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, -32, 0, 70)
+header.Position = UDim2.new(0, 16, 0, 14)
+header.BackgroundTransparency = 1
+header.Parent = card
+
+local logo = Instance.new("ImageLabel")
+logo.Size = UDim2.new(0, 54, 0, 54)
+logo.Position = UDim2.new(0, 0, 0.5, 0)
+logo.AnchorPoint = Vector2.new(0, 0.5)
+logo.BackgroundTransparency = 1
+logo.ScaleType = Enum.ScaleType.Fit
+logo.Image = ""
+logo.ImageTransparency = 1
+logo.Parent = header
+
+pcall(function()
+    local data = game:HttpGet(CONFIG.LOGO_URL)
+    if writefile and isfile and getcustomasset and makefolder then
+        if not isfolder("Static") then makefolder("Static") end
+        if not isfolder("Static/assets") then makefolder("Static/assets") end
+        if not isfile("Static/assets/logo.png") then
+            writefile("Static/assets/logo.png", data)
+        end
+        logo.Image = getcustomasset("Static/assets/logo.png")
+    end
+end)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -70, 0, 25)
+title.Position = UDim2.new(0, 68, 0, 6)
+title.BackgroundTransparency = 1
+title.Text = CONFIG.TITLE
+title.TextColor3 = Color3.fromRGB(242, 244, 250)
+title.TextTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(1, -70, 0, 20)
+subtitle.Position = UDim2.new(0, 68, 0, 33)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = CONFIG.SUBTITLE
+subtitle.TextColor3 = Color3.fromRGB(140, 145, 164)
+subtitle.TextTransparency = 1
+subtitle.Font = Enum.Font.GothamMedium
+subtitle.TextSize = 11
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
+subtitle.Parent = header
+
+local divider = Instance.new("Frame")
+divider.Size = UDim2.new(1, -32, 0, 1)
+divider.Position = UDim2.new(0, 16, 0, 89)
+divider.BackgroundColor3 = Color3.fromRGB(39, 43, 58)
+divider.BackgroundTransparency = 1
+divider.BorderSizePixel = 0
+divider.Parent = card
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -32, 0, 18)
+status.Position = UDim2.new(0, 16, 0, 105)
+status.BackgroundTransparency = 1
+status.Text = "Ready"
+status.TextColor3 = Color3.fromRGB(141, 147, 168)
+status.TextTransparency = 1
+status.Font = Enum.Font.GothamMedium
+status.TextSize = 11
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = card
+
+local launch = Instance.new("TextButton")
+launch.Size = UDim2.new(1, -32, 0, 48)
+launch.Position = UDim2.new(0, 16, 0, 137)
+launch.BackgroundColor3 = Color3.fromRGB(0, 145, 240)
+launch.BackgroundTransparency = 1
+launch.BorderSizePixel = 0
+launch.Text = ""
+launch.AutoButtonColor = false
+launch.Parent = card
+corner(launch, 10)
+local launchStroke = stroke(launch, Color3.fromRGB(65, 180, 255), 1)
+launchStroke.Transparency = 0.4
+
+local launchLabel = Instance.new("TextLabel")
+launchLabel.Size = UDim2.fromScale(1, 1)
+launchLabel.BackgroundTransparency = 1
+launchLabel.Text = "LAUNCH SCRIPT"
+launchLabel.TextColor3 = Color3.fromRGB(245, 248, 255)
+launchLabel.TextTransparency = 1
+launchLabel.Font = Enum.Font.GothamBold
+launchLabel.TextSize = 13
+launchLabel.Parent = launch
+
+local discord = Instance.new("TextButton")
+discord.Size = UDim2.new(0.5, -20, 0, 34)
+discord.Position = UDim2.new(0, 16, 1, -50)
+discord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+discord.BackgroundTransparency = 1
+discord.BorderSizePixel = 0
+discord.Text = "JOIN DISCORD"
+discord.TextColor3 = Color3.fromRGB(245, 248, 255)
+discord.TextTransparency = 1
+discord.Font = Enum.Font.GothamSemibold
+discord.TextSize = 11
+discord.AutoButtonColor = false
+discord.Parent = card
+corner(discord, 8)
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 28, 0, 28)
+close.Position = UDim2.new(1, -12, 0, 12)
+close.AnchorPoint = Vector2.new(1, 0)
+close.BackgroundTransparency = 1
+close.Text = "×"
+close.TextColor3 = Color3.fromRGB(120, 126, 145)
+close.TextTransparency = 1
+close.Font = Enum.Font.GothamBold
+close.TextSize = 20
+close.AutoButtonColor = false
+close.Parent = card
+
+local info = Instance.new("TextLabel")
+info.Size = UDim2.new(0.5, -20, 0, 34)
+info.Position = UDim2.new(1, -16, 1, -50)
+info.AnchorPoint = Vector2.new(1, 0)
+info.BackgroundTransparency = 1
+info.Text = "NO KEY REQUIRED"
+info.TextColor3 = Color3.fromRGB(70, 205, 130)
+info.TextTransparency = 1
+info.Font = Enum.Font.GothamBold
+info.TextSize = 10
+info.TextXAlignment = Enum.TextXAlignment.Right
+info.Parent = card
+
+-- =========================================================
+-- DRAGGING
+-- =========================================================
+local dragging = false
+local dragStart
+local startPosition
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    card.Position = UDim2.new(
+        startPosition.X.Scale,
+        startPosition.X.Offset + delta.X,
+        startPosition.Y.Scale,
+        startPosition.Y.Offset + delta.Y
+    )
+    shadow.Position = UDim2.new(
+        card.Position.X.Scale,
+        card.Position.X.Offset,
+        card.Position.Y.Scale,
+        card.Position.Y.Offset + 8
+    )
+end
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPosition = card.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end)
+
+-- =========================================================
+-- BUTTONS
+-- =========================================================
+launch.MouseEnter:Connect(function()
+    tween(launch, 0.15, {BackgroundColor3 = Color3.fromRGB(35, 170, 255)})
+    tween(launchStroke, 0.15, {Transparency = 0})
+end)
+launch.MouseLeave:Connect(function()
+    tween(launch, 0.15, {BackgroundColor3 = Color3.fromRGB(0, 145, 240)})
+    tween(launchStroke, 0.15, {Transparency = 0.4})
+end)
+
+discord.MouseEnter:Connect(function()
+    tween(discord, 0.15, {BackgroundColor3 = Color3.fromRGB(108, 121, 255)})
+end)
+discord.MouseLeave:Connect(function()
+    tween(discord, 0.15, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)})
+end)
+
+close.MouseEnter:Connect(function()
+    tween(close, 0.15, {TextColor3 = Color3.fromRGB(245, 75, 75), Rotation = 90})
+end)
+close.MouseLeave:Connect(function()
+    tween(close, 0.15, {TextColor3 = Color3.fromRGB(120, 126, 145), Rotation = 0})
+end)
+
+local function closeGui()
+    tween(card, 0.3, {
+        Position = UDim2.new(0.5, 0, 0.5, 18),
+        BackgroundTransparency = 1,
+    }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+    tween(shadow, 0.3, {BackgroundTransparency = 1})
+    tween(cardStroke, 0.2, {Transparency = 1})
+    for _, obj in ipairs({title, subtitle, status, launchLabel, discord, info, close, logo}) do
+        if obj:IsA("ImageLabel") then
+            tween(obj, 0.18, {ImageTransparency = 1})
+        else
+            tween(obj, 0.18, {TextTransparency = 1})
+        end
+    end
+    task.delay(0.35, function()
+        if Gui then Gui:Destroy() end
+    end)
+end
+
+close.MouseButton1Click:Connect(closeGui)
+
+launch.MouseButton1Click:Connect(function()
+    local url = trim(CONFIG.SCRIPT_URL)
+    local source = CONFIG.SCRIPT_SOURCE or ""
+    local sourceCheck = trim(source)
+
+    status.TextColor3 = Color3.fromRGB(0, 155, 255)
+
+    if sourceCheck == "" or sourceCheck == "-- YOUR SCRIPT GOES HERE" then
+        if url == "" then
+            status.TextColor3 = Color3.fromRGB(245, 75, 75)
+            status.Text = "Not configured — add your own SCRIPT_URL or SCRIPT_SOURCE."
+            notify("Launch blocked: no own-script payload configured.", true)
+            return
+        end
+
+        status.Text = "Loading your script..."
+
+        local ok, err = pcall(function()
+            local body = game:HttpGet(url)
+            local fn = loadstring(body)
+            if not fn then
+                error("loadstring returned nil")
+            end
+            fn()
+        end)
+
+        if ok then
+            status.TextColor3 = Color3.fromRGB(70, 205, 130)
+            status.Text = "Script launched successfully."
+            task.delay(0.5, closeGui)
+        else
+            status.TextColor3 = Color3.fromRGB(245, 75, 75)
+            status.Text = "Launch failed — check the URL/payload."
+            notify("Launch failed: " .. tostring(err), true)
+        end
+        return
+    end
+
+    status.Text = "Launching embedded script..."
+
+    local ok, err = pcall(function()
+        local fn = loadstring(source)
+        if not fn then
+            error("loadstring returned nil")
+        end
+        fn()
+    end)
+
+    if ok then
+        status.TextColor3 = Color3.fromRGB(70, 205, 130)
+        status.Text = "Script launched successfully."
+        task.delay(0.5, closeGui)
+    else
+        status.TextColor3 = Color3.fromRGB(245, 75, 75)
+        status.Text = "Embedded script failed to run."
+        notify("Embedded script failed: " .. tostring(err), true)
+    end
+end)
+
+discord.MouseButton1Click:Connect(function()
+    local invite = "https://discord.gg/" .. CONFIG.DISCORD_INVITE
+    if setclipboard then
+        pcall(setclipboard, invite)
+    end
+    status.TextColor3 = Color3.fromRGB(88, 101, 242)
+    status.Text = "Discord invite copied."
+end)
+
+-- =========================================================
+-- INTRO
+-- =========================================================
+task.spawn(function()
+    task.wait(0.1)
+    tween(card, 0.55, {Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 0}, Enum.EasingStyle.Back)
+    tween(shadow, 0.55, {BackgroundTransparency = 0.55}, Enum.EasingStyle.Back)
+    tween(cardStroke, 0.5, {Transparency = 0})
+    task.wait(0.12)
+    tween(logo, 0.35, {ImageTransparency = 0})
+    tween(title, 0.35, {TextTransparency = 0})
+    tween(subtitle, 0.35, {TextTransparency = 0})
+    tween(divider, 0.3, {BackgroundTransparency = 0})
+    task.wait(0.12)
+    tween(status, 0.3, {TextTransparency = 0})
+    tween(launch, 0.3, {BackgroundTransparency = 0})
+    tween(launchLabel, 0.3, {TextTransparency = 0})
+    tween(discord, 0.3, {BackgroundTransparency = 0, TextTransparency = 0})
+    tween(info, 0.3, {TextTransparency = 0})
+    tween(close, 0.3, {TextTransparency = 0})
+end)
