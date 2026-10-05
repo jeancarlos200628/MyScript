@@ -1,4 +1,4 @@
-https://raw.githubusercontent.com/jeancarlos200628/MyScript/main/main.lua
+repeat task.wait() until game:IsLoaded()
 repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
